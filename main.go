@@ -2,29 +2,100 @@ package main
 
 import (
 	"flag"
-	"log"
+	"fmt"
 	"os"
 )
 
-func main() {
-	countBytesFlag := flag.Bool("c", false, "a boolean flag for counting the number of bytes")
+type Flags struct {
+	bytesCounterFlag bool
+	linesCounterFlag bool
+}
 
-	flag.Parse()
+type Counters struct {
+	bytesCounter int
+	linesCounter int
+}
+
+func main() {
+	flags := parseFlags()
 
 	filePath := flag.Arg(0)
 
-	fileInfo := getFileInfo(filePath)
+	file := getFile(filePath)
 
-	if *countBytesFlag {
-		log.Printf("%d %s", fileInfo.Size(), filePath)
-	}
+	counters := resolve(file, flags)
+
+	output(filePath, flags, counters)
 }
 
-func getFileInfo(filePath string) os.FileInfo {
-	fileInfo, err := os.Stat(filePath)
+func getFile(filePath string) []byte {
+	file, err := os.ReadFile(filePath)
 	if err != nil {
-		log.Fatalln(err)
+		fmt.Println(err)
+		os.Exit(1)
 	}
 
-	return fileInfo
+	return file
+}
+
+func countLines(file []byte) int {
+	total := 0
+	for i := range file {
+		if file[i] == 10 {
+			total++
+		}
+	}
+	return total
+}
+
+func countBytes(file []byte) int {
+	return len(file)
+}
+
+func output(filePath string, flags Flags, counters Counters) {
+	output := ""
+
+	if flags.bytesCounterFlag {
+		output = output + fmt.Sprint(counters.bytesCounter)
+	}
+
+	if flags.linesCounterFlag {
+		output = output + " " + fmt.Sprint(counters.linesCounter)
+	}
+
+	output = output + " " + filePath
+
+	fmt.Println(output)
+}
+
+func parseFlags() Flags {
+	bytesCounterFlag := *flag.Bool("c", false, "a boolean flag for counting the number of bytes")
+	linesCounterFlag := *flag.Bool("l", false, "a boolean flag for counting the number of lines")
+
+	// if none provided, then show all
+	if !bytesCounterFlag && !linesCounterFlag {
+		bytesCounterFlag = true
+		linesCounterFlag = true
+	}
+
+	flag.Parse()
+
+	return Flags{bytesCounterFlag: bytesCounterFlag, linesCounterFlag: linesCounterFlag}
+}
+
+func resolve(file []byte, flags Flags) Counters {
+	outputs := newOutputs()
+	if flags.bytesCounterFlag {
+		outputs.bytesCounter = countBytes(file)
+	}
+
+	if flags.linesCounterFlag {
+		outputs.linesCounter = countLines(file)
+	}
+
+	return outputs
+}
+
+func newOutputs() Counters {
+	return Counters{}
 }
