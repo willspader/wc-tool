@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strings"
 )
 
 type Flags struct {
@@ -65,22 +66,22 @@ func output(filePath string, flags Flags, counters Counters) {
 
 	output = output + " " + filePath
 
-	fmt.Println(output)
+	fmt.Println(strings.TrimPrefix(output, " "))
 }
 
 func parseFlags() Flags {
-	bytesCounterFlag := *flag.Bool("c", false, "a boolean flag for counting the number of bytes")
-	linesCounterFlag := *flag.Bool("l", false, "a boolean flag for counting the number of lines")
-
-	// if none provided, then show all
-	if !bytesCounterFlag && !linesCounterFlag {
-		bytesCounterFlag = true
-		linesCounterFlag = true
-	}
+	bytesCounterFlag := flag.Bool("c", false, "a boolean flag for counting the number of bytes")
+	linesCounterFlag := flag.Bool("l", false, "a boolean flag for counting the number of lines")
 
 	flag.Parse()
 
-	return Flags{bytesCounterFlag: bytesCounterFlag, linesCounterFlag: linesCounterFlag}
+	// if none provided, then show all
+	if !*bytesCounterFlag && !*linesCounterFlag {
+		*bytesCounterFlag = true
+		*linesCounterFlag = true
+	}
+
+	return Flags{bytesCounterFlag: *bytesCounterFlag, linesCounterFlag: *linesCounterFlag}
 }
 
 func resolve(file []byte, flags Flags) Counters {
