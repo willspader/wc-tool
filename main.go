@@ -1,3 +1,7 @@
+// TODO: Tests for large files (50GB)
+// TODO: If failed (take too long or out of memory) for large files, then take another path to not stored all the file in memory.
+// If file smaller than some threshhold, then load to the memory, else, iterate over the file without loading all the content.
+
 package main
 
 import (
@@ -51,6 +55,10 @@ func countLines(file []byte) int {
 
 func countBytes(file []byte) int {
 	return len(file)
+}
+
+func countWords(file []byte) int {
+	return 0
 }
 
 func output(filePath string, flags Flags, counters Counters) {
