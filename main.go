@@ -9,18 +9,21 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"unicode/utf8"
 )
 
 type Flags struct {
-	bytesCounterFlag bool
-	linesCounterFlag bool
-	wordsCounterFlag bool
+	bytesCounterFlag      bool
+	linesCounterFlag      bool
+	wordsCounterFlag      bool
+	charactersCounterFlag bool
 }
 
 type Counters struct {
-	bytesCounter int
-	linesCounter int
-	wordsCounter int
+	bytesCounter      int
+	linesCounter      int
+	wordsCounter      int
+	charactersCounter int
 }
 
 func main() {
@@ -63,6 +66,11 @@ func countWords(file []byte) int {
 	return len(strings.Fields(string(file)))
 }
 
+// If the current locale does not support multibyte characters this will match the -c option.
+func countCharacters(file []byte) int {
+	return utf8.RuneCount(file)
+}
+
 func output(filePath string, flags Flags, counters Counters) {
 	output := ""
 
@@ -78,6 +86,10 @@ func output(filePath string, flags Flags, counters Counters) {
 		output = output + " " + fmt.Sprint(counters.wordsCounter)
 	}
 
+	if flags.charactersCounterFlag {
+		output = output + " " + fmt.Sprint(counters.charactersCounter)
+	}
+
 	output = output + " " + filePath
 
 	fmt.Println(strings.TrimPrefix(output, " "))
@@ -87,17 +99,18 @@ func parseFlags() Flags {
 	bytesCounterFlag := flag.Bool("c", false, "a boolean flag for counting the number of bytes")
 	linesCounterFlag := flag.Bool("l", false, "a boolean flag for counting the number of lines")
 	wordsCounterFlag := flag.Bool("w", false, "a boolean flag for counting the number of words")
+	charactersCounterFlag := flag.Bool("m", false, "a boolean flag for counting the number of characters")
 
 	flag.Parse()
 
-	// if none provided, then show all
-	if !*bytesCounterFlag && !*linesCounterFlag && !*wordsCounterFlag {
+	// if none provided, then show -c -l -w
+	if !*bytesCounterFlag && !*linesCounterFlag && !*wordsCounterFlag && !*charactersCounterFlag {
 		*bytesCounterFlag = true
 		*linesCounterFlag = true
 		*wordsCounterFlag = true
 	}
 
-	return Flags{bytesCounterFlag: *bytesCounterFlag, linesCounterFlag: *linesCounterFlag, wordsCounterFlag: *wordsCounterFlag}
+	return Flags{bytesCounterFlag: *bytesCounterFlag, linesCounterFlag: *linesCounterFlag, wordsCounterFlag: *wordsCounterFlag, charactersCounterFlag: *charactersCounterFlag}
 }
 
 func resolve(file []byte, flags Flags) Counters {
@@ -112,6 +125,10 @@ func resolve(file []byte, flags Flags) Counters {
 
 	if flags.wordsCounterFlag {
 		outputs.wordsCounter = countWords(file)
+	}
+
+	if flags.charactersCounterFlag {
+		outputs.charactersCounter = countCharacters(file)
 	}
 
 	return outputs
