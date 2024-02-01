@@ -14,11 +14,13 @@ import (
 type Flags struct {
 	bytesCounterFlag bool
 	linesCounterFlag bool
+	wordsCounterFlag bool
 }
 
 type Counters struct {
 	bytesCounter int
 	linesCounter int
+	wordsCounter int
 }
 
 func main() {
@@ -58,7 +60,7 @@ func countBytes(file []byte) int {
 }
 
 func countWords(file []byte) int {
-	return 0
+	return len(strings.Fields(string(file)))
 }
 
 func output(filePath string, flags Flags, counters Counters) {
@@ -72,6 +74,10 @@ func output(filePath string, flags Flags, counters Counters) {
 		output = output + " " + fmt.Sprint(counters.linesCounter)
 	}
 
+	if flags.wordsCounterFlag {
+		output = output + " " + fmt.Sprint(counters.wordsCounter)
+	}
+
 	output = output + " " + filePath
 
 	fmt.Println(strings.TrimPrefix(output, " "))
@@ -80,16 +86,18 @@ func output(filePath string, flags Flags, counters Counters) {
 func parseFlags() Flags {
 	bytesCounterFlag := flag.Bool("c", false, "a boolean flag for counting the number of bytes")
 	linesCounterFlag := flag.Bool("l", false, "a boolean flag for counting the number of lines")
+	wordsCounterFlag := flag.Bool("w", false, "a boolean flag for counting the number of words")
 
 	flag.Parse()
 
 	// if none provided, then show all
-	if !*bytesCounterFlag && !*linesCounterFlag {
+	if !*bytesCounterFlag && !*linesCounterFlag && !*wordsCounterFlag {
 		*bytesCounterFlag = true
 		*linesCounterFlag = true
+		*wordsCounterFlag = true
 	}
 
-	return Flags{bytesCounterFlag: *bytesCounterFlag, linesCounterFlag: *linesCounterFlag}
+	return Flags{bytesCounterFlag: *bytesCounterFlag, linesCounterFlag: *linesCounterFlag, wordsCounterFlag: *wordsCounterFlag}
 }
 
 func resolve(file []byte, flags Flags) Counters {
@@ -100,6 +108,10 @@ func resolve(file []byte, flags Flags) Counters {
 
 	if flags.linesCounterFlag {
 		outputs.linesCounter = countLines(file)
+	}
+
+	if flags.wordsCounterFlag {
+		outputs.wordsCounter = countWords(file)
 	}
 
 	return outputs
