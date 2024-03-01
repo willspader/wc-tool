@@ -16,7 +16,6 @@ type FlagCounter struct {
 	active    bool
 	counter   int
 	calculate func([]byte) int
-	print     func(string)
 }
 
 func main() {
