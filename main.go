@@ -12,30 +12,23 @@ import (
 	"unicode/utf8"
 )
 
-type Flags struct {
-	bytesCounterFlag      bool
-	linesCounterFlag      bool
-	wordsCounterFlag      bool
-	charactersCounterFlag bool
-}
-
-type Counters struct {
-	bytesCounter      int
-	linesCounter      int
-	wordsCounter      int
-	charactersCounter int
+type FlagCounter struct {
+	active    bool
+	counter   int
+	calculate func([]byte) int
+	print     func(string)
 }
 
 func main() {
-	flags := parseFlags()
+	flagsCounters := parseFlags()
 
 	filePath := flag.Arg(0)
 
 	file := getFile(filePath)
 
-	counters := resolve(file, flags)
+	resolveCalculations(file, flagsCounters)
 
-	output(filePath, flags, counters)
+	resolveOutput(filePath, flagsCounters)
 }
 
 func getFile(filePath string) []byte {
@@ -71,23 +64,21 @@ func countCharacters(file []byte) int {
 	return utf8.RuneCount(file)
 }
 
-func output(filePath string, flags Flags, counters Counters) {
+func resolveCalculations(file []byte, flagsCounters []FlagCounter) {
+	for i := 0; i < len(flagsCounters); i++ {
+		if flagsCounters[i].active {
+			flagsCounters[i].counter = flagsCounters[i].calculate(file)
+		}
+	}
+}
+
+func resolveOutput(filePath string, flagsCounters []FlagCounter) {
 	output := ""
 
-	if flags.bytesCounterFlag {
-		output = output + fmt.Sprint(counters.bytesCounter)
-	}
-
-	if flags.linesCounterFlag {
-		output = output + " " + fmt.Sprint(counters.linesCounter)
-	}
-
-	if flags.wordsCounterFlag {
-		output = output + " " + fmt.Sprint(counters.wordsCounter)
-	}
-
-	if flags.charactersCounterFlag {
-		output = output + " " + fmt.Sprint(counters.charactersCounter)
+	for _, flagCounter := range flagsCounters {
+		if flagCounter.active {
+			output = output + " " + fmt.Sprint(flagCounter.counter)
+		}
 	}
 
 	output = output + " " + filePath
@@ -95,7 +86,7 @@ func output(filePath string, flags Flags, counters Counters) {
 	fmt.Println(strings.TrimPrefix(output, " "))
 }
 
-func parseFlags() Flags {
+func parseFlags() []FlagCounter {
 	bytesCounterFlag := flag.Bool("c", false, "a boolean flag for counting the number of bytes")
 	linesCounterFlag := flag.Bool("l", false, "a boolean flag for counting the number of lines")
 	wordsCounterFlag := flag.Bool("w", false, "a boolean flag for counting the number of words")
@@ -110,30 +101,9 @@ func parseFlags() Flags {
 		*wordsCounterFlag = true
 	}
 
-	return Flags{bytesCounterFlag: *bytesCounterFlag, linesCounterFlag: *linesCounterFlag, wordsCounterFlag: *wordsCounterFlag, charactersCounterFlag: *charactersCounterFlag}
-}
-
-func resolve(file []byte, flags Flags) Counters {
-	outputs := newOutputs()
-	if flags.bytesCounterFlag {
-		outputs.bytesCounter = countBytes(file)
-	}
-
-	if flags.linesCounterFlag {
-		outputs.linesCounter = countLines(file)
-	}
-
-	if flags.wordsCounterFlag {
-		outputs.wordsCounter = countWords(file)
-	}
-
-	if flags.charactersCounterFlag {
-		outputs.charactersCounter = countCharacters(file)
-	}
-
-	return outputs
-}
-
-func newOutputs() Counters {
-	return Counters{}
+	return []FlagCounter{
+		{active: *linesCounterFlag, calculate: countLines},
+		{active: *wordsCounterFlag, calculate: countWords},
+		{active: *bytesCounterFlag, calculate: countBytes},
+		{active: *charactersCounterFlag, calculate: countCharacters}}
 }
